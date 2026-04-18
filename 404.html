@@ -1,0 +1,970 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YouTube Multi-Video Player</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background-color: #0f0f0f;
+            color: #f1f1f1;
+            line-height: 1.6;
+            padding: 20px;
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1800px;
+            margin: 0 auto;
+        }
+        
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid #ff0000;
+        }
+        
+        h1 {
+            color: #ff0000;
+            margin-bottom: 10px;
+            font-size: 2.5rem;
+        }
+        
+        .subtitle {
+            color: #aaa;
+            font-size: 1.1rem;
+            margin-bottom: 20px;
+        }
+        
+        .input-section {
+            background-color: #1f1f1f;
+            padding: 25px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);
+        }
+        
+        .api-key-container {
+            margin-bottom: 20px;
+            padding: 15px;
+            background-color: #2a2a2a;
+            border-radius: 8px;
+        }
+        
+        .api-key-container input {
+            width: 100%;
+            padding: 12px;
+            margin-top: 8px;
+            background-color: #1a1a1a;
+            border: 1px solid #444;
+            border-radius: 5px;
+            color: #f1f1f1;
+            font-size: 1rem;
+        }
+        
+        .api-key-container small {
+            color: #888;
+            display: block;
+            margin-top: 5px;
+            font-size: 0.85rem;
+        }
+        
+        .channel-input-container {
+            display: flex;
+            margin-bottom: 20px;
+        }
+        
+        #channelUrl {
+            flex-grow: 1;
+            padding: 15px;
+            background-color: #2c2c2c;
+            border: 1px solid #444;
+            border-radius: 5px 0 0 5px;
+            color: #f1f1f1;
+            font-size: 1rem;
+        }
+        
+        #loadVideos {
+            background-color: #ff0000;
+            color: white;
+            border: none;
+            padding: 0 25px;
+            border-radius: 0 5px 5px 0;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 1rem;
+            transition: background-color 0.3s;
+        }
+        
+        #loadVideos:hover {
+            background-color: #cc0000;
+        }
+        
+        .settings {
+            display: flex;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 15px;
+            padding-top: 15px;
+            border-top: 1px solid #444;
+        }
+        
+        .setting-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .setting-group label {
+            color: #ddd;
+        }
+        
+        select, .mute-toggle {
+            padding: 8px 15px;
+            background-color: #2c2c2c;
+            border: 1px solid #444;
+            border-radius: 5px;
+            color: #f1f1f1;
+        }
+        
+        .mute-toggle {
+            background-color: #444;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .mute-toggle.active {
+            background-color: #ff0000;
+        }
+        
+        .player-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(450px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .video-wrapper {
+            position: relative;
+            background-color: #000;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.7);
+            aspect-ratio: 16/9;
+        }
+        
+        .video-wrapper iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+        
+        .video-info {
+            padding: 10px;
+            background-color: rgba(0, 0, 0, 0.8);
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            font-size: 0.9rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .video-title {
+            flex-grow: 1;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            margin-right: 10px;
+        }
+        
+        .video-number {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background-color: rgba(255, 0, 0, 0.8);
+            color: white;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            z-index: 10;
+        }
+        
+        .status-message {
+            text-align: center;
+            padding: 20px;
+            background-color: #1f1f1f;
+            border-radius: 10px;
+            margin-bottom: 30px;
+            font-size: 1.2rem;
+        }
+        
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+        
+        .control-btn {
+            padding: 12px 25px;
+            background-color: #2c2c2c;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 1rem;
+            transition: background-color 0.3s;
+        }
+        
+        .control-btn:hover {
+            background-color: #444;
+        }
+        
+        .control-btn.play {
+            background-color: #006400;
+        }
+        
+        .control-btn.play:hover {
+            background-color: #008000;
+        }
+        
+        .control-btn.pause {
+            background-color: #8B8000;
+        }
+        
+        .control-btn.pause:hover {
+            background-color: #B8860B;
+        }
+        
+        footer {
+            text-align: center;
+            padding-top: 20px;
+            border-top: 1px solid #444;
+            color: #888;
+            font-size: 0.9rem;
+        }
+        
+        .note {
+            background-color: #1a1a1a;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+            font-size: 0.9rem;
+            color: #aaa;
+        }
+        
+        .error {
+            background-color: #4a1a1a;
+            color: #ff6b6b;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+            display: none;
+        }
+        
+        .loader {
+            border: 4px solid #333;
+            border-top: 4px solid #ff0000;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+            display: none;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        @media (max-width: 1200px) {
+            .player-container {
+                grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .player-container {
+                grid-template-columns: 1fr;
+            }
+            
+            .settings {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            
+            .channel-input-container {
+                flex-direction: column;
+            }
+            
+            #channelUrl, #loadVideos {
+                border-radius: 5px;
+                width: 100%;
+            }
+            
+            #loadVideos {
+                margin-top: 10px;
+                padding: 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1><i class="fab fa-youtube"></i> YouTube Multi-Video Player</h1>
+            <p class="subtitle">Play 10 random videos from any YouTube channel simultaneously</p>
+        </header>
+        
+        <main>
+            <div class="input-section">
+                <div class="api-key-container">
+                    <label for="apiKey">YouTube API Key (Required):</label>
+                    <input type="text" id="apiKey" placeholder="Enter your YouTube Data API v3 key">
+                    <small>Get a free API key from <a href="https://console.cloud.google.com/apis/credentials" target="_blank" style="color:#ff6b6b;">Google Cloud Console</a>. Enable the YouTube Data API v3.</small>
+                </div>
+                
+                <div class="channel-input-container">
+                    <input type="text" id="channelUrl" placeholder="Enter YouTube Channel URL or Channel ID (e.g., https://www.youtube.com/@YouTube or UC_x5XG1OV2P6uZZ5FSM9Ttw)">
+                    <button id="loadVideos">Load Random Videos</button>
+                </div>
+                
+                <div class="settings">
+                    <div class="setting-group">
+                        <label for="quality">Default Quality:</label>
+                        <select id="quality">
+                            <option value="144">144p</option>
+                            <option value="240">240p</option>
+                            <option value="360">360p</option>
+                            <option value="480">480p</option>
+                            <option value="720">720p</option>
+                            <option value="1080">1080p</option>
+                        </select>
+                    </div>
+                    
+                    <div class="setting-group">
+                        <label for="muteToggle">Audio:</label>
+                        <button id="muteToggle" class="mute-toggle active">
+                            <i class="fas fa-volume-mute"></i> Muted
+                        </button>
+                    </div>
+                    
+                    <div class="setting-group">
+                        <label for="videoCount">Videos:</label>
+                        <select id="videoCount">
+                            <option value="5">5 Videos</option>
+                            <option value="10" selected>10 Videos</option>
+                            <option value="15">15 Videos</option>
+                            <option value="20">20 Videos</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="loader" id="loader"></div>
+            
+            <div id="errorMessage" class="error"></div>
+            
+            <div id="statusMessage" class="status-message">
+                Enter your YouTube API key and a channel URL above, then click "Load Random Videos"
+            </div>
+            
+            <div id="playerContainer" class="player-container">
+                <!-- Video players will be inserted here -->
+            </div>
+            
+            <div class="controls">
+                <button id="playAll" class="control-btn play">
+                    <i class="fas fa-play"></i> Play All
+                </button>
+                <button id="pauseAll" class="control-btn pause">
+                    <i class="fas fa-pause"></i> Pause All
+                </button>
+                <button id="shuffleVideos" class="control-btn">
+                    <i class="fas fa-random"></i> Shuffle Videos
+                </button>
+                <button id="refreshVideos" class="control-btn">
+                    <i class="fas fa-sync-alt"></i> New Random Set
+                </button>
+            </div>
+            
+            <div class="note">
+                <p><strong>How to use:</strong></p>
+                <p>1. Get a YouTube Data API v3 key from <a href="https://console.cloud.google.com/apis/credentials" target="_blank" style="color:#ff6b6b;">Google Cloud Console</a></p>
+                <p>2. Enable the YouTube Data API v3 for your project</p>
+                <p>3. Enter your API key and a YouTube channel URL (or channel ID)</p>
+                <p>4. Click "Load Random Videos" to fetch videos from that specific channel</p>
+                <p><strong>Note:</strong> The YouTube API has quota limits. Each request consumes quota points.</p>
+            </div>
+        </main>
+        
+        <footer>
+            <p>YouTube Multi-Video Player &copy; 2023 | Fetches videos from the actual channel you specify</p>
+        </footer>
+    </div>
+
+    <script>
+        // DOM elements
+        const apiKeyInput = document.getElementById('apiKey');
+        const channelUrlInput = document.getElementById('channelUrl');
+        const loadVideosBtn = document.getElementById('loadVideos');
+        const qualitySelect = document.getElementById('quality');
+        const muteToggle = document.getElementById('muteToggle');
+        const videoCountSelect = document.getElementById('videoCount');
+        const statusMessage = document.getElementById('statusMessage');
+        const errorMessage = document.getElementById('errorMessage');
+        const loader = document.getElementById('loader');
+        const playerContainer = document.getElementById('playerContainer');
+        const playAllBtn = document.getElementById('playAll');
+        const pauseAllBtn = document.getElementById('pauseAll');
+        const shuffleVideosBtn = document.getElementById('shuffleVideos');
+        const refreshVideosBtn = document.getElementById('refreshVideos');
+        
+        // State variables
+        let currentVideos = [];
+        let players = [];
+        let isMuted = true;
+        let currentQuality = '144';
+        let currentChannelId = null;
+        let currentApiKey = null;
+        let allChannelVideos = [];
+        
+        // YouTube API ready state
+        let ytApiReady = false;
+        
+        // Load YouTube IFrame API
+        function loadYouTubeAPI() {
+            if (typeof YT === 'undefined' || typeof YT.Player === 'undefined') {
+                const tag = document.createElement('script');
+                tag.src = "https://www.youtube.com/iframe_api";
+                const firstScriptTag = document.getElementsByTagName('script')[0];
+                firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+            } else {
+                ytApiReady = true;
+            }
+        }
+        
+        // Called when YouTube API is ready
+        function onYouTubeIframeAPIReady() {
+            ytApiReady = true;
+            console.log("YouTube IFrame API is ready");
+        }
+        
+        // Extract channel ID from various URL formats
+        function extractChannelId(url) {
+            let channelId = '';
+            
+            if (!url) return null;
+            
+            // If it's already a channel ID (starts with UC)
+            if (url.startsWith('UC') && url.length === 24) {
+                return url;
+            }
+            
+            // Handle different URL formats
+            try {
+                const urlObj = new URL(url);
+                
+                // Format: https://www.youtube.com/channel/UC_x5XG1OV2P6uZZ5FSM9Ttw
+                if (urlObj.pathname.startsWith('/channel/')) {
+                    channelId = urlObj.pathname.split('/')[2];
+                }
+                // Format: https://www.youtube.com/@username
+                else if (urlObj.pathname.startsWith('/@')) {
+                    // For handle URLs, we need to fetch the channel ID via API
+                    return urlObj.pathname.substring(1); // Remove leading slash
+                }
+                // Format: https://www.youtube.com/c/username or /user/username
+                else if (urlObj.pathname.startsWith('/c/') || urlObj.pathname.startsWith('/user/')) {
+                    return urlObj.pathname;
+                }
+                // Format: https://www.youtube.com/watch?v=VIDEO_ID (extract from video)
+                else if (urlObj.pathname === '/watch' && urlObj.searchParams.get('v')) {
+                    // This is a video URL, not a channel URL
+                    return null;
+                }
+            } catch (e) {
+                // If it's not a valid URL, try to see if it's a handle
+                if (url.startsWith('@')) {
+                    return url;
+                }
+                // Check if it looks like a channel ID
+                else if (url.startsWith('UC') && url.length === 24) {
+                    return url;
+                }
+            }
+            
+            return channelId || null;
+        }
+        
+        // Fetch channel ID from handle or custom URL via YouTube API
+        async function getChannelIdFromHandle(handle, apiKey) {
+            try {
+                let endpoint = '';
+                
+                if (handle.startsWith('@')) {
+                    // Handle format: @username
+                    endpoint = `https://www.googleapis.com/youtube/v3/channels?part=id&forHandle=${handle}&key=${apiKey}`;
+                } else if (handle.startsWith('/c/') || handle.startsWith('/user/')) {
+                    // Custom URL or legacy username format
+                    const identifier = handle.substring(1); // Remove leading slash
+                    endpoint = `https://www.googleapis.com/youtube/v3/channels?part=id&forUsername=${identifier}&key=${apiKey}`;
+                }
+                
+                if (!endpoint) return null;
+                
+                const response = await fetch(endpoint);
+                const data = await response.json();
+                
+                if (data.items && data.items.length > 0) {
+                    return data.items[0].id;
+                }
+                
+                return null;
+            } catch (error) {
+                console.error('Error fetching channel ID:', error);
+                return null;
+            }
+        }
+        
+        // Fetch videos from a channel using YouTube API
+        async function fetchChannelVideos(channelId, apiKey, maxResults = 50) {
+            try {
+                // First, get the uploads playlist ID for the channel
+                const channelResponse = await fetch(
+                    `https://www.googleapis.com/youtube/v3/channels?part=contentDetails&id=${channelId}&key=${apiKey}`
+                );
+                
+                const channelData = await channelResponse.json();
+                
+                if (!channelData.items || channelData.items.length === 0) {
+                    throw new Error('Channel not found');
+                }
+                
+                const uploadsPlaylistId = channelData.items[0].contentDetails.relatedPlaylists.uploads;
+                
+                // Now fetch videos from the uploads playlist
+                const playlistResponse = await fetch(
+                    `https://www.googleapis.com/youtube/v3/playlistItems?part=snippet&playlistId=${uploadsPlaylistId}&maxResults=${maxResults}&key=${apiKey}`
+                );
+                
+                const playlistData = await playlistResponse.json();
+                
+                if (!playlistData.items || playlistData.items.length === 0) {
+                    throw new Error('No videos found in this channel');
+                }
+                
+                // Extract video IDs and titles
+                const videos = playlistData.items.map(item => ({
+                    id: item.snippet.resourceId.videoId,
+                    title: item.snippet.title
+                }));
+                
+                return videos;
+            } catch (error) {
+                console.error('Error fetching channel videos:', error);
+                throw error;
+            }
+        }
+        
+        // Get random video IDs from the fetched channel videos
+        function getRandomVideoIds(videos, count) {
+            if (videos.length === 0) return [];
+            
+            // Shuffle the videos array
+            const shuffled = [...videos].sort(() => 0.5 - Math.random());
+            
+            // Return the first 'count' videos
+            return shuffled.slice(0, Math.min(count, shuffled.length));
+        }
+        
+        // Create video players
+        function createVideoPlayers(videos) {
+            // Clear existing players
+            playerContainer.innerHTML = '';
+            players = [];
+            
+            if (videos.length === 0) {
+                statusMessage.textContent = "No videos found for this channel.";
+                return;
+            }
+            
+            statusMessage.textContent = `Playing ${videos.length} random videos from the channel`;
+            
+            // Create player for each video
+            videos.forEach((video, index) => {
+                const videoWrapper = document.createElement('div');
+                videoWrapper.className = 'video-wrapper';
+                videoWrapper.id = `videoWrapper-${index}`;
+                
+                const videoNumber = document.createElement('div');
+                videoNumber.className = 'video-number';
+                videoNumber.textContent = index + 1;
+                
+                const videoInfo = document.createElement('div');
+                videoInfo.className = 'video-info';
+                
+                const videoTitle = document.createElement('div');
+                videoTitle.className = 'video-title';
+                videoTitle.textContent = video.title || `Video ${index + 1}`;
+                
+                const videoStats = document.createElement('div');
+                videoStats.className = 'video-stats';
+                videoStats.textContent = `${currentQuality}p | ${isMuted ? 'Muted' : 'Unmuted'}`;
+                
+                videoInfo.appendChild(videoTitle);
+                videoInfo.appendChild(videoStats);
+                
+                videoWrapper.appendChild(videoNumber);
+                videoWrapper.appendChild(videoInfo);
+                
+                // Create iframe for YouTube player
+                const playerDiv = document.createElement('div');
+                playerDiv.id = `player-${index}`;
+                videoWrapper.appendChild(playerDiv);
+                
+                playerContainer.appendChild(videoWrapper);
+                
+                // Create YouTube player
+                const player = new YT.Player(`player-${index}`, {
+                    height: '100%',
+                    width: '100%',
+                    videoId: video.id,
+                    playerVars: {
+                        'autoplay': 0,
+                        'controls': 1,
+                        'rel': 0,
+                        'modestbranding': 1,
+                        'fs': 0,
+                        'playsinline': 1
+                    },
+                    events: {
+                        'onReady': (event) => onPlayerReady(event, index),
+                        'onStateChange': (event) => onPlayerStateChange(event, index)
+                    }
+                });
+                
+                players.push({
+                    player: player,
+                    videoId: video.id,
+                    videoTitle: video.title,
+                    wrapper: videoWrapper,
+                    info: videoInfo,
+                    stats: videoStats
+                });
+            });
+        }
+        
+        // When player is ready
+        function onPlayerReady(event, index) {
+            // Set quality (Note: YouTube API doesn't guarantee quality setting)
+            try {
+                // This is not guaranteed to work due to YouTube restrictions
+                // event.target.setPlaybackQuality && event.target.setPlaybackQuality('small');
+            } catch (e) {
+                // Quality setting might fail
+            }
+            
+            // Set mute state
+            if (isMuted) {
+                event.target.mute();
+            } else {
+                event.target.unMute();
+            }
+            
+            // Update video info
+            updateVideoInfo(index);
+        }
+        
+        // When player state changes
+        function onPlayerStateChange(event, index) {
+            // When video ends, play another random video from the same channel
+            if (event.data === YT.PlayerState.ENDED) {
+                setTimeout(() => {
+                    if (allChannelVideos.length > 0) {
+                        // Pick a random video from the channel (different from current)
+                        let availableVideos = allChannelVideos.filter(v => v.id !== players[index].videoId);
+                        if (availableVideos.length === 0) availableVideos = allChannelVideos;
+                        
+                        const randomVideo = availableVideos[Math.floor(Math.random() * availableVideos.length)];
+                        players[index].player.loadVideoById(randomVideo.id);
+                        players[index].videoId = randomVideo.id;
+                        players[index].videoTitle = randomVideo.title;
+                        updateVideoInfo(index);
+                    }
+                }, 500);
+            }
+        }
+        
+        // Update video info display
+        function updateVideoInfo(index) {
+            if (players[index]) {
+                const titleElement = players[index].info.querySelector('.video-title');
+                const statsElement = players[index].stats;
+                
+                if (titleElement) {
+                    titleElement.textContent = players[index].videoTitle || `Video ${index + 1}`;
+                }
+                
+                if (statsElement) {
+                    statsElement.textContent = `${currentQuality}p | ${isMuted ? 'Muted' : 'Unmuted'}`;
+                }
+            }
+        }
+        
+        // Load videos from channel
+        async function loadChannelVideos() {
+            const apiKey = apiKeyInput.value.trim();
+            const url = channelUrlInput.value.trim();
+            
+            if (!apiKey) {
+                showError("Please enter your YouTube API key");
+                return;
+            }
+            
+            if (!url) {
+                showError("Please enter a YouTube channel URL");
+                return;
+            }
+            
+            // Show loader
+            loader.style.display = 'block';
+            statusMessage.textContent = "Fetching channel information...";
+            hideError();
+            
+            try {
+                currentApiKey = apiKey;
+                
+                // Extract channel identifier from URL
+                const channelIdentifier = extractChannelId(url);
+                
+                if (!channelIdentifier) {
+                    throw new Error("Invalid YouTube channel URL. Please provide a valid channel URL or ID.");
+                }
+                
+                let channelId = channelIdentifier;
+                
+                // If it's a handle (@username) or custom URL (/c/username), fetch the channel ID
+                if (channelIdentifier.startsWith('@') || channelIdentifier.startsWith('/c/') || channelIdentifier.startsWith('/user/')) {
+                    statusMessage.textContent = "Looking up channel ID...";
+                    channelId = await getChannelIdFromHandle(channelIdentifier, apiKey);
+                    
+                    if (!channelId) {
+                        throw new Error(`Could not find channel for "${channelIdentifier}". Please check the URL.`);
+                    }
+                }
+                
+                currentChannelId = channelId;
+                
+                // Fetch videos from the channel
+                statusMessage.textContent = "Fetching videos from channel...";
+                allChannelVideos = await fetchChannelVideos(channelId, apiKey, 50);
+                
+                if (allChannelVideos.length === 0) {
+                    throw new Error("No videos found in this channel.");
+                }
+                
+                // Get random videos
+                const videoCount = parseInt(videoCountSelect.value);
+                const randomVideos = getRandomVideoIds(allChannelVideos, videoCount);
+                currentVideos = randomVideos;
+                
+                // Create players
+                if (ytApiReady) {
+                    createVideoPlayers(randomVideos);
+                } else {
+                    // Wait for YouTube API to be ready
+                    statusMessage.textContent = "Initializing YouTube player...";
+                    const checkInterval = setInterval(() => {
+                        if (ytApiReady) {
+                            clearInterval(checkInterval);
+                            createVideoPlayers(randomVideos);
+                        }
+                    }, 100);
+                }
+            } catch (error) {
+                showError(`Error: ${error.message}`);
+                statusMessage.textContent = "Failed to load videos. Please check your inputs and try again.";
+            } finally {
+                loader.style.display = 'none';
+            }
+        }
+        
+        // Play all videos
+        function playAllVideos() {
+            players.forEach(playerObj => {
+                try {
+                    playerObj.player.playVideo();
+                } catch (e) {
+                    console.warn("Could not play video:", e);
+                }
+            });
+        }
+        
+        // Pause all videos
+        function pauseAllVideos() {
+            players.forEach(playerObj => {
+                try {
+                    playerObj.player.pauseVideo();
+                } catch (e) {
+                    console.warn("Could not pause video:", e);
+                }
+            });
+        }
+        
+        // Shuffle videos (swap videos between players)
+        function shuffleVideos() {
+            if (allChannelVideos.length === 0) {
+                showError("No channel videos loaded. Please load a channel first.");
+                return;
+            }
+            
+            // Create a shuffled list of available videos
+            const shuffledVideos = getRandomVideoIds(allChannelVideos, players.length);
+            
+            // Assign new videos to each player
+            players.forEach((playerObj, index) => {
+                const newVideo = shuffledVideos[index];
+                if (newVideo && newVideo.id !== playerObj.videoId) {
+                    playerObj.player.loadVideoById(newVideo.id);
+                    playerObj.videoId = newVideo.id;
+                    playerObj.videoTitle = newVideo.title;
+                    updateVideoInfo(index);
+                }
+            });
+        }
+        
+        // Get a new random set of videos from the same channel
+        function refreshVideos() {
+            if (!currentChannelId || !currentApiKey) {
+                showError("Please load a channel first.");
+                return;
+            }
+            
+            const videoCount = parseInt(videoCountSelect.value);
+            const randomVideos = getRandomVideoIds(allChannelVideos, videoCount);
+            currentVideos = randomVideos;
+            
+            // Recreate players with new videos
+            if (ytApiReady) {
+                createVideoPlayers(randomVideos);
+            }
+        }
+        
+        // Toggle mute state
+        function toggleMute() {
+            isMuted = !isMuted;
+            
+            if (isMuted) {
+                muteToggle.innerHTML = '<i class="fas fa-volume-mute"></i> Muted';
+                muteToggle.classList.add('active');
+            } else {
+                muteToggle.innerHTML = '<i class="fas fa-volume-up"></i> Unmuted';
+                muteToggle.classList.remove('active');
+            }
+            
+            // Apply to all players
+            players.forEach((playerObj, index) => {
+                try {
+                    if (isMuted) {
+                        playerObj.player.mute();
+                    } else {
+                        playerObj.player.unMute();
+                    }
+                    updateVideoInfo(index);
+                } catch (e) {
+                    console.warn("Could not change mute state:", e);
+                }
+            });
+        }
+        
+        // Update quality for all players (Note: YouTube restrictions apply)
+        function updateQuality() {
+            currentQuality = qualitySelect.value;
+            
+            players.forEach((playerObj, index) => {
+                try {
+                    // This may not work due to YouTube restrictions
+                    // playerObj.player.setPlaybackQuality && playerObj.player.setPlaybackQuality(currentQuality + 'p');
+                    updateVideoInfo(index);
+                } catch (e) {
+                    console.warn("Could not change quality:", e);
+                }
+            });
+        }
+        
+        // Show error message
+        function showError(message) {
+            errorMessage.textContent = message;
+            errorMessage.style.display = 'block';
+        }
+        
+        // Hide error message
+        function hideError() {
+            errorMessage.style.display = 'none';
+        }
+        
+        // Initialize the app
+        function init() {
+            // Set up event listeners
+            loadVideosBtn.addEventListener('click', loadChannelVideos);
+            playAllBtn.addEventListener('click', playAllVideos);
+            pauseAllBtn.addEventListener('click', pauseAllVideos);
+            shuffleVideosBtn.addEventListener('click', shuffleVideos);
+            refreshVideosBtn.addEventListener('click', refreshVideos);
+            muteToggle.addEventListener('click', toggleMute);
+            qualitySelect.addEventListener('change', updateQuality);
+            
+            // Load YouTube API
+            loadYouTubeAPI();
+            
+            // Set initial state
+            muteToggle.classList.add('active');
+            qualitySelect.value = '144';
+            
+            // Allow Enter key to trigger video load
+            channelUrlInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    loadChannelVideos();
+                }
+            });
+            
+            apiKeyInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    loadChannelVideos();
+                }
+            });
+            
+            // Pre-fill with sample channel for testing
+            channelUrlInput.value = 'https://www.youtube.com/@YouTube';
+        }
+        
+        // Make onYouTubeIframeAPIReady available globally
+        window.onYouTubeIframeAPIReady = onYouTubeIframeAPIReady;
+        
+        // Initialize when page loads
+        document.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>
